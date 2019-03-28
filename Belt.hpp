@@ -1,6 +1,7 @@
 #include <queue>
 
 //Cameron Ozatalar
+//Mariano Gutierrez
 
 class Belt{
     public:

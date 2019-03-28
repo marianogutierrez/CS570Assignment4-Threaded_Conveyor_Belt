@@ -1,4 +1,5 @@
 #Cameron Ozatalar
+#Mariano Gutierrez
 
 #Create Executable
 mizzo: Main.o

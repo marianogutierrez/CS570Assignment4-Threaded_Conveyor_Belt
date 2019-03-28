@@ -2,6 +2,7 @@
 #include "Belt.hpp"
 
 //Cameron Ozatalar
+//Mariano Gutierrez
 
 Belt::Belt(){
     belt = new std::queue<int>();

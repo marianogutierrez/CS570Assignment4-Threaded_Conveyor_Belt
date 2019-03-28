@@ -5,6 +5,7 @@
 using namespace std;
 
 //Cameron Ozatalar
+//Mariano Gutierrez
 
 int main(int argc, char** argv){
     //Variables for getopt and default values:
