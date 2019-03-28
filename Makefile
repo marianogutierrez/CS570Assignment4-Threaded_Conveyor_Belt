@@ -15,4 +15,4 @@ Belt.o: Belt.hpp Belt.cpp
 
 #Clean up files
 clean:
-	rm Main.o mizzo
+	rm Main.o Belt.o mizzo
