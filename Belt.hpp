@@ -11,4 +11,6 @@ class Belt{
         int escargotNum;
         Belt();
         ~Belt();
+        void push(int itemToQueue);
+        int pop();
 };

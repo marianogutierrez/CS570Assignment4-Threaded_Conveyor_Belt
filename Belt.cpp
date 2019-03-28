@@ -14,3 +14,18 @@ Belt::Belt(){
 Belt::~Belt(){
     delete belt;
 }
+
+void Belt::push(int itemToQueue){
+    //TODO: check type and change values
+    
+    belt -> push(itemToQueue);
+}
+
+int Belt::pop(){
+    int front = belt -> front();
+    belt -> pop();
+
+    //TODO: check type and change values
+
+    return front;
+}
