@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-
-using namespace std;
+#include "Belt.hpp"
 
 //Cameron Ozatalar
 //Mariano Gutierrez
@@ -39,5 +38,9 @@ int main(int argc, char** argv){
     //Print the speeds
     printf("Speeds:\n\tEthel Speed: %d\n\tLucy Speed: %d\n\tCrunchy Frog Speed: %d\n\tEscargot Speed: %d\n", ethelSpeed, lucySpeed, crunFrogSpeed, escargotSpeed);
 
+    Belt *conveyerBelt = new Belt();
+
+    //Free memory and exit
+    delete conveyerBelt;
     exit(0);
 }

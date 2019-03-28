@@ -2,8 +2,8 @@
 #Mariano Gutierrez
 
 #Create Executable
-mizzo: Main.o
-	g++ Main.o -g -o mizzo
+mizzo: Main.o Belt.o
+	g++ Main.o Belt.o -g -o mizzo
 
 #Create Main object file
 Main.o: Main.cpp

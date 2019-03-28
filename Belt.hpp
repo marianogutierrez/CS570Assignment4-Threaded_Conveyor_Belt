@@ -11,4 +11,4 @@ class Belt{
         int escargotNum;
         Belt();
         ~Belt();
-}
+};
