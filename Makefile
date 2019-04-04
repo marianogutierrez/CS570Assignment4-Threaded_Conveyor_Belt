@@ -7,7 +7,7 @@ mizzo: Main.o Belt.o
 
 #Create Main object file
 Main.o: Main.cpp
-	g++ -c Main.cpp
+	g++ -c Main.cpp -lpthread -lrt
 
 #Create Belt object file
 Belt.o: Belt.hpp Belt.cpp
