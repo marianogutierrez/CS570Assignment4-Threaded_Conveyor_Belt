@@ -10,10 +10,8 @@
 #include "Consumer.hpp"
 #include "Producer.hpp"
 // NOTE: Do not use global vars to comm to threads use data structs 
-
 //Cameron Ozatalar
 //Mariano Gutierrez
-
 using namespace std;
 //function prototypes
 void* consumeCandy(void* worker);
@@ -71,10 +69,10 @@ int main(int argc, char** argv){
     pthread_create(&ethel, NULL,consumeCandy, Ethel);
 
     // join up *might not need*
-    pthread_join(frogBiteGen, NULL);
-    pthread_join(escargotGen, NULL);
-    pthread_join(lucy, NULL);
-    pthread_join(ethel, NULL);
+    //pthread_join(frogBiteGen, NULL);
+    //pthread_join(escargotGen, NULL);
+    //pthread_join(lucy, NULL);
+    //pthread_join(ethel, NULL);
     
     
     // main thread block untill consumption of 100th candy 
@@ -85,10 +83,10 @@ int main(int argc, char** argv){
     Ethel ->totalConsumed = Ethel->escargotConsumed + Ethel ->frogBiteConsumed;
     cout << "PRODUCTION REPORT" << endl;
     cout << "----------------------------------------" << endl;
-   // cout << "crunchy frog bite producer generated " << conveyerBelt -> gencrunFrogNum << " candies" << endl;
-    //cout << "escargot sucker producer generated " << conveyerBelt -> genescargotNum << " candies" << endl;
+    cout << "crunchy frog bite producer generated " << frogBiteProducer->totalProduced << " candies" << endl;
+    cout << "escargot sucker producer generated " << escargotProducer->totalProduced << " candies" << endl;
     cout << "Lucy consumed " << Lucy ->frogBiteConsumed << " crunchy frog bites + ";  
-    cout << Lucy ->frogBiteConsumed << " escargot suckers = " << Lucy -> totalConsumed << endl;
+    cout << Lucy ->escargotConsumed << " escargot suckers = " << Lucy -> totalConsumed << endl;
     cout << "Ethel consumed " << Ethel -> frogBiteConsumed << " crunchy frog bites + ";
     cout << Ethel ->escargotConsumed << " escargot suckers = "  << Ethel -> totalConsumed << endl;
 
@@ -103,21 +101,31 @@ int main(int argc, char** argv){
 //consumer processes must share common code 
 void* consumeCandy(void* worker) {
     Consumer *consume = (Consumer*) worker; // safe, I know what I'm dealing with
-    string name = consume -> name; // quick ref;
+    string name = consume -> name; // quick reference
     for(;;) {
       sem_wait(&(consume -> conveyor -> consumeKey)); // lock, till stuff to grab is avail
-      while(consume ->conveyor ->belt ->size != 0) {
+      while(consume ->conveyor -> belt ->size() != 0) {
           int candy = consume ->conveyor ->pop();
           if(candy == escargotSucker) {
               consume ->escargotConsumed++;
-              cout << name << "consumed crunchy frog bite."
+              consume->conveyor->escargots--;
+              int currentTotal = consume -> conveyor -> escargots + consume-> conveyor -> frogs;
+              cout << "Belt: " << consume -> conveyor -> frogs << " frogs + " << "";
+              cout << consume ->conveyor->escargots << " escargots = " << currentTotal <<"."; 
+              cout << " produced: " << consume ->conveyor->lifeTimeProduced << "    ";
+              cout << name << " consumed escargot." << endl;
           }
           else { // it's a frog bite 
             consume ->frogBiteConsumed++;
-            cout << name << "consumed crunchy frog bite."
+            consume->conveyor->frogs--;
+            int currentTotal = consume -> conveyor -> escargots + consume-> conveyor -> frogs;
+            cout << "Belt: " << consume -> conveyor -> frogs << " frogs + " << "";
+            cout << consume ->conveyor->escargots <<  " escargots = " << currentTotal <<"."; 
+            cout << " produced: " << consume ->conveyor->lifeTimeProduced << "    ";
+            cout << name << " consumed crunchy frog bite." << endl;
           }
       }
-     if(consume ->conveyor->lifeTimeProduced == maxCandy) { // exit case
+     if(consume ->conveyor->lifeTimeConsumed == maxCandy) { // exit case
         sem_post(&(consume -> conveyor ->barrier)); // open the barrier
         break;
        }
@@ -135,9 +143,13 @@ void* makeFrogBites(void* producer) {
             break; // outta here
         }
         while(produce -> conveyor -> push(crunFrogBites)) { //while we can push more candy
+            produce -> conveyor ->frogs++;
+            produce ->totalProduced++;
+            int currentTotal = produce -> conveyor -> escargots + produce -> conveyor -> frogs;
             cout << "Belt: " << produce -> conveyor -> frogs << " frogs + ";
-            cout << "escargots = " << produce ->conveyor->escargots; 
-            cout << "    " << "Added crunchy frog bite.";
+            cout <<  produce ->conveyor->escargots <<  " escargots = " << currentTotal << "."; 
+            cout << " produced: " << produce ->conveyor->lifeTimeProduced;
+            cout << "    " << "Added crunchy frog bite." << endl;
             if(produce -> conveyor ->frogs == 3) { // the max num allowed at a time is 3!
                 sem_post(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
                 break; // back out and wait your turn once more!
@@ -145,7 +157,7 @@ void* makeFrogBites(void* producer) {
             //otherwise sleep the amt given
             sem_post(&(produce -> conveyor ->consumeKey)); // there's stuff on the belt go get it!
             sem_wait(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
-            sleep(produce -> speed/1000); // /1000 to get ms
+            sleep((produce -> speed)/1000); // /1000 to get ms
         }
         sem_post(&(produce -> conveyor ->consumeKey)); // out of while relinquish lock
     } 
@@ -157,16 +169,21 @@ void* makeEscargot(void* producer) {
         sem_wait(&(produce -> conveyor -> produceKey)); // lock Entering critical section
         if(produce -> conveyor -> lifeTimeProduced == maxCandy) { // 100 for the day
             sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
+            // maybe also its own to ensure other is free?
             break; // outta here
         }
         //returns true as long as there are no more than 10 candies on the belt!
         while(produce -> conveyor -> push(escargotSucker)) {
+            produce -> conveyor ->escargots++;
+            produce ->totalProduced++;
+            int currentTotal = produce -> conveyor -> escargots + produce -> conveyor -> frogs;
             cout << "Belt: " << produce -> conveyor -> frogs << " frogs + ";
-            cout << "escargots = " << produce ->conveyor->escargots; 
-            cout << "    " << "Added escargot sucker.";
+            cout <<  produce ->conveyor->escargots << " escargots = " << currentTotal <<  "."; 
+            cout << " produced: " << produce ->conveyor->lifeTimeProduced;
+            cout << "    " << "Added escargot sucker." << endl;
             sem_post(&(produce -> conveyor ->consumeKey)); // there's stuff on the belt go get it!
             sem_wait(&(produce -> conveyor -> produceKey)); // other producer gets a turn
-            sleep(produce ->speed/1000); // /1000 to get ms
+            sleep((produce ->speed)/1000); // /1000 to get ms
         }
         // out of while meaning ten items on the belt
         sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock

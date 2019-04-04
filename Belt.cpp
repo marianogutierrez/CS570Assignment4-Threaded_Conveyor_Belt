@@ -24,7 +24,7 @@ Belt::~Belt(){
 
 bool Belt::push(int itemToQueue){
     //TODO: check type and change values
-    if(belt -> size > 10) // no more than 10 items on the belt.
+    if((this -> belt -> size()) > 10) // no more than 10 items on the belt.
         return false;
     belt -> push(itemToQueue);
     lifeTimeProduced++; // end with increment 

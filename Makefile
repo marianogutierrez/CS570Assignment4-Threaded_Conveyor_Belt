@@ -2,12 +2,9 @@
 #Mariano Gutierrez
 
 #Create Executable
-mizzo: Main.o 
-	g++ Main.o -g -o mizzo
 
-#Create Main object file
-Main.o: Main.cpp Producer.o
-	g++ -c Main.cpp -lpthread -lrt
+mizzo: Main.cpp Producer.o Belt.o Consumer.o
+	g++  Main.cpp Producer.o Belt.o Consumer.o  -g -o mizzo -lpthread -lrt
 
 #Create Producer object file
 Producer.o: Belt.o Producer.hpp Producer.cpp 
@@ -23,4 +20,4 @@ Belt.o: Belt.hpp Belt.cpp
 
 #Clean up files
 clean:
-	rm Main.o Belt.o Producer.o Consumer.o mizzo
+	rm Belt.o Producer.o Consumer.o mizzo
