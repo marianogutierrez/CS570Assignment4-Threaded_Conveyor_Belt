@@ -109,22 +109,20 @@ void* consumeCandy(void* worker) {
       while(consume ->conveyor ->belt ->size != 0) {
           int candy = consume ->conveyor ->pop();
           if(candy == escargotSucker) {
-              if(name.compare("Lucy") == 0) {
-
-              }
-              else { // it's Ethel
-
-              }
+              consume ->escargotConsumed++;
+              cout << name << "consumed crunchy frog bite."
           }
           else { // it's a frog bite 
-
+            consume ->frogBiteConsumed++;
+            cout << name << "consumed crunchy frog bite."
           }
       }
-       if(consume ->conveyor->lifeTimeProduced == maxCandy) { // exit case
-        sem_post(&(consume -> conveyor ->barrier)); // // open the barrier
+     if(consume ->conveyor->lifeTimeProduced == maxCandy) { // exit case
+        sem_post(&(consume -> conveyor ->barrier)); // open the barrier
         break;
-      }
-    }
+       }
+      sem_post(&(consume -> conveyor -> produceKey));
+   }
 }
 
 //producers should stop once 100 are made in total 
@@ -132,6 +130,10 @@ void* makeFrogBites(void* producer) {
     Producer* produce = (Producer*) producer;
     for(;;) {
         sem_wait(&(produce -> conveyor -> produceKey)); // lock. Entering crit section
+        if(produce -> conveyor -> lifeTimeProduced == maxCandy) { // 100 for the day
+            sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
+            break; // outta here
+        }
         while(produce -> conveyor -> push(crunFrogBites)) { //while we can push more candy
             cout << "Belt: " << produce -> conveyor -> frogs << " frogs + ";
             cout << "escargots = " << produce ->conveyor->escargots; 
@@ -141,8 +143,9 @@ void* makeFrogBites(void* producer) {
                 break; // back out and wait your turn once more!
             }
             //otherwise sleep the amt given
+            sem_post(&(produce -> conveyor ->consumeKey)); // there's stuff on the belt go get it!
+            sem_wait(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
             sleep(produce -> speed/1000); // /1000 to get ms
-            sem_post(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
         }
         sem_post(&(produce -> conveyor ->consumeKey)); // out of while relinquish lock
     } 
@@ -161,8 +164,9 @@ void* makeEscargot(void* producer) {
             cout << "Belt: " << produce -> conveyor -> frogs << " frogs + ";
             cout << "escargots = " << produce ->conveyor->escargots; 
             cout << "    " << "Added escargot sucker.";
-            sleep(produce ->speed/1000); // /1000 to get ms
+            sem_post(&(produce -> conveyor ->consumeKey)); // there's stuff on the belt go get it!
             sem_wait(&(produce -> conveyor -> produceKey)); // other producer gets a turn
+            sleep(produce ->speed/1000); // /1000 to get ms
         }
         // out of while meaning ten items on the belt
         sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
