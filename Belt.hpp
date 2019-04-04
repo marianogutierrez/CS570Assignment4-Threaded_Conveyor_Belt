@@ -1,7 +1,6 @@
 #pragma once // headfiler gaurd
 #include <queue>
 #include <semaphore.h>
-#include "Consumer.hpp"
 
 
 //Cameron Ozatalar
