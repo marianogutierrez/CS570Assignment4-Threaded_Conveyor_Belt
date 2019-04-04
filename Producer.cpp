@@ -1,5 +1,6 @@
 #include "Producer.hpp"
-
+//Cameron Ozatalar
+//Mariano Gutierrez
 Producer::Producer(Belt* belt, int delay) {
     conveyor = belt;
     speed = delay;

@@ -10,10 +10,11 @@ Belt::Belt(){
     belt = new std::queue<int>();
     frogs = 0;
     escargots = 0;
+    lifeTimeProduced  = 0;
+    lifeTimeConsumed = 0;
     // middle val in pshared, in this case it's 0 because it will be shared between threads.
     sem_init(&(this -> barrier),0,0);  // always to zero for barriers
     sem_init(&(this -> produceKey),0,1); // bin. semaphore
-    lifeTimeProduced  = 0;
 }
 
 Belt::~Belt(){
@@ -33,6 +34,7 @@ bool Belt::push(int itemToQueue){
 int Belt::pop(){
     int front = belt -> front();
     belt -> pop();
+    lifeTimeConsumed++;
     //TODO: check type and change values
     return front;
 }

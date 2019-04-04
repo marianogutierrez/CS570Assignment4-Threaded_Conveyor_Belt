@@ -105,13 +105,18 @@ void* consumeCandy(void* worker) {
     Consumer *consume = (Consumer*) worker; // safe, I know what I'm dealing with
     string name = consume -> name; // quick ref;
     for(;;) {
-      sem_wait(&(consume -> conveyor -> consumeKey)); // lock
+      sem_wait(&(consume -> conveyor -> consumeKey)); // lock, till stuff to grab is avail
       while(consume ->conveyor ->belt ->size != 0) {
           int candy = consume ->conveyor ->pop();
           if(candy == escargotSucker) {
-              
+              if(name.compare("Lucy") == 0) {
+
+              }
+              else { // it's Ethel
+
+              }
           }
-          else {
+          else { // it's a frog bite 
 
           }
       }
@@ -126,31 +131,38 @@ void* consumeCandy(void* worker) {
 void* makeFrogBites(void* producer) {
     Producer* produce = (Producer*) producer;
     for(;;) {
-        sem_wait(&(produce -> conveyor -> consumeKey)); // lock
-    }
-     // safe, I know what I'm dealing with
-    /*
-    sem_wait(&(this -> belt -> produceKey)); // block other thread
-
-    sem_post(&(this -> belt -> produceKey)); // relinquish the lock
-    */
+        sem_wait(&(produce -> conveyor -> produceKey)); // lock. Entering crit section
+        while(produce -> conveyor -> push(crunFrogBites)) { //while we can push more candy
+            cout << "Belt: " << produce -> conveyor -> frogs << " frogs + ";
+            cout << "escargots = " << produce ->conveyor->escargots; 
+            cout << "    " << "Added crunchy frog bite.";
+            if(produce -> conveyor ->frogs == 3) { // the max num allowed at a time is 3!
+                sem_post(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
+                break; // back out and wait your turn once more!
+            }
+            //otherwise sleep the amt given
+            sleep(produce -> speed/1000); // /1000 to get ms
+            sem_post(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
+        }
+        sem_post(&(produce -> conveyor ->consumeKey)); // out of while relinquish lock
+    } 
 }
 
 void* makeEscargot(void* producer) {
     Producer* produce = (Producer*) producer; // safe, I know what I'm dealing with
     for(;;) {
-        sem_wait(&(produce -> conveyor -> produceKey)); // lock
+        sem_wait(&(produce -> conveyor -> produceKey)); // lock Entering critical section
         if(produce -> conveyor -> lifeTimeProduced == maxCandy) { // 100 for the day
             sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
             break; // outta here
         }
-        //returns true as long as there are no more than 10 on the belt!
+        //returns true as long as there are no more than 10 candies on the belt!
         while(produce -> conveyor -> push(escargotSucker)) {
-            //descriptive output
             cout << "Belt: " << produce -> conveyor -> frogs << " frogs + ";
             cout << "escargots = " << produce ->conveyor->escargots; 
             cout << "    " << "Added escargot sucker.";
             sleep(produce ->speed/1000); // /1000 to get ms
+            sem_wait(&(produce -> conveyor -> produceKey)); // other producer gets a turn
         }
         // out of while meaning ten items on the belt
         sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock

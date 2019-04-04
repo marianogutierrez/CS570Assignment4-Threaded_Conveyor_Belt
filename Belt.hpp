@@ -13,7 +13,9 @@ class Belt{
         int frogs; // number ON the belt
         int escargots; // number ON the belt
         // note also each candy is represented by an integer, specifed in the main file
+        // Or, I guess I could put it here
         int lifeTimeProduced; // should add up to 100 each time.
+        int lifeTimeConsumed; // again should add up to 100 this will be used to signal the barrier.
         sem_t barrier;
         sem_t consumeKey;
         sem_t produceKey;

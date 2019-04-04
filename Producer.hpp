@@ -1,6 +1,7 @@
 #pragma once
 #include "Belt.hpp"
-
+//Cameron Ozatalar
+//Mariano Gutierrez
 class Producer{
     public:
     Belt* conveyor;
