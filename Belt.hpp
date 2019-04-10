@@ -16,6 +16,7 @@ class Belt{
         int lifeTimeProduced; // should add up to 100 each time.
         int lifeTimeConsumed; // again should add up to 100 this will be used to signal the barrier.
         sem_t barrier;
+        sem_t consumeSignal;
         sem_t consumeKey;
         sem_t produceKey;
         Belt();

@@ -14,16 +14,19 @@ Belt::Belt(){
     lifeTimeConsumed = 0;
     // middle val in pshared, in this case it's 0 because it will be shared between threads.
     sem_init(&(this -> barrier),0,0);  // always to zero for barriers
+    sem_init(&(this -> consumeSignal),0,0);  //
+    sem_init(&(this ->consumeKey),0,1); // bin semaphore  a.k.a a mutex 
     sem_init(&(this -> produceKey),0,1); // bin. semaphore
 }
 
 Belt::~Belt(){
     sem_destroy(&(this -> barrier));
+    sem_destroy(&(this -> consumeSignal));
     sem_destroy(&(this -> produceKey));
+    sem_destroy(&(this ->consumeKey));
 }
 
 bool Belt::push(int itemToQueue){
-    //TODO: check type and change values
     if((this -> belt -> size()) > 10) // no more than 10 items on the belt.
         return false;
     belt -> push(itemToQueue);
@@ -35,6 +38,5 @@ int Belt::pop(){
     int front = belt -> front();
     belt -> pop();
     lifeTimeConsumed++;
-    //TODO: check type and change values
     return front;
 }

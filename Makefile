@@ -2,7 +2,6 @@
 #Mariano Gutierrez
 
 #Create Executable
-
 mizzo: Main.cpp Producer.o Belt.o Consumer.o
 	g++  Main.cpp Producer.o Belt.o Consumer.o  -g -o mizzo -lpthread -lrt
 
