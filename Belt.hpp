@@ -18,6 +18,7 @@ class Belt{
         sem_t barrier;
         sem_t consumeSignal;
         sem_t availSlots;
+        sem_t frogSignal;
         sem_t mutex;
         //sem_t consumeKey
         //sem_t produceKey;

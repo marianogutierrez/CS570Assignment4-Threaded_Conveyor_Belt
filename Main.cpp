@@ -66,16 +66,16 @@ int main(int argc, char** argv){
 
     pthread_t lucy,ethel,frogBiteGen,escargotGen; 
     //producers first 
-    //pthread_create(&frogBiteGen,NULL,makeFrogBites,(void*) frogBiteProducer) ;
     pthread_create(&escargotGen,NULL,makeEscargot,(void *) escargotProducer);
+    pthread_create(&frogBiteGen,NULL,makeFrogBites,(void*) frogBiteProducer);
     pthread_create(&lucy,NULL,consumeCandy, Lucy);
     pthread_create(&ethel, NULL,consumeCandy, Ethel);
 
-    // join up *might not need*
-    //pthread_join(frogBiteGen, NULL);
-    //pthread_join(escargotGen, NULL);
-    //pthread_join(lucy, NULL);
-    //pthread_join(ethel, NULL);
+    // join up *might not need* or could detach
+    pthread_join(frogBiteGen, NULL); // good
+    pthread_join(escargotGen, NULL); // good
+    pthread_join(lucy, NULL);
+    pthread_join(ethel, NULL);
     
     
     // main thread block untill consumption of 100th candy 
@@ -116,10 +116,10 @@ void* consumeCandy(void* worker) {
     string name = consume -> name; // quick reference
     for(;;) {
       sem_wait(&(consume -> conveyor -> consumeSignal)); // block untill something to consume 
-      sem_wait(&(consume -> conveyor -> mutex)); // mutex lock
+      sem_wait(&(consume -> conveyor -> mutex)); // mutex lock gets stuck waiting for lock here
       // ensure other thread leaves
       if(consume ->conveyor->lifeTimeConsumed == maxCandy) { // exit case
-        //sem_post(&(consume -> conveyor -> mutex)); // may not need here, since at this point all is done
+        sem_post(&(consume -> conveyor -> mutex)); // may not need here, since at this point all is done
         //sem_post(&(consume -> conveyor ->barrier)); // same thing here
         break; // ... and be free
       }
@@ -135,10 +135,13 @@ void* consumeCandy(void* worker) {
           else { // it's a frog bite 
             consume ->frogBiteConsumed++;
             consume->conveyor->frogs--;
+            if(consume->conveyor->frogs == 2)  // there are no longer 3 on the belt
+                sem_post(&(consume->conveyor->frogSignal)); 
             int currentTotal = consume -> conveyor -> escargots + consume-> conveyor -> frogs;
             consumeDescript(consume,currentTotal);
             cout << name << " consumed crunchy frog bite." << endl;
           }
+      }
           // If that candy was the 100th...
           if(consume ->conveyor->lifeTimeConsumed == maxCandy) { // exit case
             sem_post(&(consume -> conveyor -> mutex)); // release mutex to free other thread
@@ -150,8 +153,6 @@ void* consumeCandy(void* worker) {
             sem_post(&(consume -> conveyor -> availSlots)); // more slots ready
             sleep((consume ->delay)/1000); // sleep between each, note div by 1000 to get ms 
           }
-      }
-      // no -op
    }
 }
 
@@ -159,16 +160,14 @@ void* consumeCandy(void* worker) {
 void* makeFrogBites(void* producer) {
     Producer* produce = (Producer*) producer;
     for(;;) {
-          if(produce -> conveyor ->frogs == 3) { // need something else here.
-            continue; // spin untill there are not 3
-        }
         sem_wait(&(produce -> conveyor -> availSlots)); // lock. Entering crit section
         sem_wait(&(produce -> conveyor -> mutex));
         if(produce -> conveyor -> lifeTimeProduced == maxCandy) { // 100 for the day
-            sem_post(&(produce -> conveyor -> mutex));
-            sem_post(&(produce -> conveyor ->consumeSignal));
-            break;
+            sem_post(&(produce -> conveyor -> mutex)); // it has the lock, free it 
+            //sem_post(&(produce -> conveyor ->consumeSignal));
+            break; // done other generator finished first 
         }
+        
         if(produce -> conveyor -> push(crunFrogBites)) { //while we can push more candy
             produce -> conveyor ->frogs++;
             produce ->totalProduced++;
@@ -181,25 +180,19 @@ void* makeFrogBites(void* producer) {
                 sem_post(&(produce -> conveyor -> mutex));
                 sem_post(&(produce -> conveyor ->consumeSignal));
                 break;
-            //sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
             }
-            /*
             else if(produce -> conveyor ->frogs == 3) { // the max num allowed at a time is 3!
                 sem_post(&(produce -> conveyor -> mutex)); // let another do work
                 sem_post(&(produce -> conveyor ->consumeSignal));
-                //sem_post(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
-                //maybe wait?
-                //break; // back out and wait your turn once more!
-            } */
+                sem_wait(&(produce->conveyor->frogSignal)); // block this thread 
+                sleep((produce -> speed)/1000); // /1000 to get ms
+            } 
             else {
                 sem_post(&(produce -> conveyor -> mutex));
                 sem_post(&(produce -> conveyor ->consumeSignal));
                 sleep((produce -> speed)/1000); // /1000 to get ms
-                //sem_post(&(produce -> conveyor ->consumeKey)); // there's stuff on the belt go get it!
-                //sem_wait(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
             }
         }
-        //sem_post(&(produce -> conveyor ->consumeKey)); // out of while relinquish lock
     } 
 }
 
@@ -209,8 +202,9 @@ void* makeEscargot(void* producer) {
         sem_wait(&(produce -> conveyor -> availSlots)); 
         sem_wait(&(produce -> conveyor -> mutex));
         // ensures thread leaves if other gen finsihed 
-         if(produce -> conveyor -> lifeTimeProduced == maxCandy) {
-            //sem_post(&(produce -> conveyor -> mutex));
+        if(produce -> conveyor -> lifeTimeProduced == maxCandy) {
+            sem_post(&(produce -> conveyor -> mutex)); // it has the mutex so free it
+            // wont need it!
             //sem_post(&(produce -> conveyor ->consumeSignal));
             break; // what if thread was outside? waiting? The other generator was responsible 
          }
@@ -223,10 +217,13 @@ void* makeEscargot(void* producer) {
             cout <<  produce ->conveyor->escargots << " escargots = " << currentTotal <<  "."; 
             cout << " produced: " << produce ->conveyor->lifeTimeProduced;
             cout << "   " << "Added escargot sucker." << endl;
+            if(produce -> conveyor -> lifeTimeProduced == maxCandy) {
+                sem_post(&(produce -> conveyor -> mutex));
+                sem_post(&(produce -> conveyor ->consumeSignal));
+                break; // this generator was responsible. End it.
+            }
             sem_post(&(produce -> conveyor -> mutex));
             sem_post(&(produce -> conveyor ->consumeSignal));
-            if(produce -> conveyor -> lifeTimeProduced == maxCandy) 
-                break; // this generator was responsible. End it.
             sleep((produce ->speed)/1000); // /1000 to get ms
         }
     }

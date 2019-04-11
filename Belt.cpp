@@ -16,6 +16,7 @@ Belt::Belt(){
     sem_init(&(this -> barrier),0,0);  // always to zero for barriers
     sem_init(&(this -> consumeSignal),0,0);  
     sem_init(&(this ->availSlots),0,10); 
+    sem_init(&(this ->frogSignal),0,0); 
     sem_init(&(this ->mutex),0,1); // bin semaphore  a.k.a a mutex 
     //em_init(&(this ->consumeKey),0,1);
     //sem_init(&(this -> produceKey),0,1); // bin. semaphore
@@ -25,6 +26,7 @@ Belt::~Belt(){
     sem_destroy(&(this -> barrier));
     sem_destroy(&(this -> consumeSignal));
     sem_destroy(&(this -> availSlots));
+    sem_destroy(&(this -> frogSignal));
     sem_destroy(&(this -> mutex));
     //sem_destroy(&(this -> produceKey));
     //sem_destroy(&(this ->consumeKey));
