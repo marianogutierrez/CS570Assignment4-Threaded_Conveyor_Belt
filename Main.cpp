@@ -66,7 +66,7 @@ int main(int argc, char** argv){
 
     pthread_t lucy,ethel,frogBiteGen,escargotGen; 
     //producers first 
-    pthread_create(&frogBiteGen,NULL,makeFrogBites,(void*) frogBiteProducer) ;
+    //pthread_create(&frogBiteGen,NULL,makeFrogBites,(void*) frogBiteProducer) ;
     pthread_create(&escargotGen,NULL,makeEscargot,(void *) escargotProducer);
     pthread_create(&lucy,NULL,consumeCandy, Lucy);
     pthread_create(&ethel, NULL,consumeCandy, Ethel);
@@ -115,7 +115,14 @@ void* consumeCandy(void* worker) {
     Consumer *consume = (Consumer*) worker; // safe, I know what I'm dealing with
     string name = consume -> name; // quick reference
     for(;;) {
-      sem_wait(&(consume -> conveyor -> consumeKey)); // wait to start and once back
+      sem_wait(&(consume -> conveyor -> consumeSignal)); // block untill something to consume 
+      sem_wait(&(consume -> conveyor -> mutex)); // mutex lock
+      // ensure other thread leaves
+      if(consume ->conveyor->lifeTimeConsumed == maxCandy) { // exit case
+        //sem_post(&(consume -> conveyor -> mutex)); // may not need here, since at this point all is done
+        //sem_post(&(consume -> conveyor ->barrier)); // same thing here
+        break; // ... and be free
+      }
       if(consume ->conveyor -> belt ->size() != 0) { // If I can get some candy then ->
           int candy = consume ->conveyor ->pop(); //  -> grab the candy and determine which it was!
           if(candy == escargotSucker) {
@@ -134,15 +141,17 @@ void* consumeCandy(void* worker) {
           }
           // If that candy was the 100th...
           if(consume ->conveyor->lifeTimeConsumed == maxCandy) { // exit case
-            sem_post(&(consume -> conveyor ->barrier)); // open the barrier ... 
+            sem_post(&(consume -> conveyor -> mutex)); // release mutex to free other thread
+            sem_post(&(consume -> conveyor ->barrier)); // open the barrier! 
             break; // ... and be free
           }
-          sleep((consume ->delay)/1000); // sleep between each, note div by 1000 to get ms 
-          sem_post(&(consume -> conveyor -> consumeKey)); // let the other one go 
+          else {
+            sem_post(&(consume -> conveyor -> mutex)); // let the other one go 
+            sem_post(&(consume -> conveyor -> availSlots)); // more slots ready
+            sleep((consume ->delay)/1000); // sleep between each, note div by 1000 to get ms 
+          }
       }
-      else {  // there is nothing to consume 
-        sem_post(&(consume -> conveyor -> produceKey)); // signal to the generators
-      }
+      // no -op
    }
 }
 
@@ -150,14 +159,17 @@ void* consumeCandy(void* worker) {
 void* makeFrogBites(void* producer) {
     Producer* produce = (Producer*) producer;
     for(;;) {
-        sem_wait(&(produce -> conveyor -> produceKey)); // lock. Entering crit section
-
-        if(produce -> conveyor -> lifeTimeProduced == maxCandy) { // 100 for the day
-            sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
-            break; // outta here
+          if(produce -> conveyor ->frogs == 3) { // need something else here.
+            continue; // spin untill there are not 3
         }
-        // main work
-        while(produce -> conveyor -> push(crunFrogBites)) { //while we can push more candy
+        sem_wait(&(produce -> conveyor -> availSlots)); // lock. Entering crit section
+        sem_wait(&(produce -> conveyor -> mutex));
+        if(produce -> conveyor -> lifeTimeProduced == maxCandy) { // 100 for the day
+            sem_post(&(produce -> conveyor -> mutex));
+            sem_post(&(produce -> conveyor ->consumeSignal));
+            break;
+        }
+        if(produce -> conveyor -> push(crunFrogBites)) { //while we can push more candy
             produce -> conveyor ->frogs++;
             produce ->totalProduced++;
             int currentTotal = produce -> conveyor -> escargots + produce -> conveyor -> frogs;
@@ -165,28 +177,43 @@ void* makeFrogBites(void* producer) {
             cout <<  produce ->conveyor->escargots <<  " escargots = " << currentTotal << "."; 
             cout << " produced: " << produce ->conveyor->lifeTimeProduced;
             cout << "   " << "Added crunchy frog bite." << endl;
-            if(produce -> conveyor ->frogs == 3) { // the max num allowed at a time is 3!
-                sem_post(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
-                //maybe wait?
-                break; // back out and wait your turn once more!
+            if(produce -> conveyor -> lifeTimeProduced == maxCandy) { // 100 for the day
+                sem_post(&(produce -> conveyor -> mutex));
+                sem_post(&(produce -> conveyor ->consumeSignal));
+                break;
+            //sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
             }
-            sem_post(&(produce -> conveyor ->consumeKey)); // there's stuff on the belt go get it!
-            sem_wait(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
-            sleep((produce -> speed)/1000); // /1000 to get ms
+            /*
+            else if(produce -> conveyor ->frogs == 3) { // the max num allowed at a time is 3!
+                sem_post(&(produce -> conveyor -> mutex)); // let another do work
+                sem_post(&(produce -> conveyor ->consumeSignal));
+                //sem_post(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
+                //maybe wait?
+                //break; // back out and wait your turn once more!
+            } */
+            else {
+                sem_post(&(produce -> conveyor -> mutex));
+                sem_post(&(produce -> conveyor ->consumeSignal));
+                sleep((produce -> speed)/1000); // /1000 to get ms
+                //sem_post(&(produce -> conveyor ->consumeKey)); // there's stuff on the belt go get it!
+                //sem_wait(&(produce ->conveyor->produceKey)); // relinquish lock to to other maker
+            }
         }
-        sem_post(&(produce -> conveyor ->consumeKey)); // out of while relinquish lock
+        //sem_post(&(produce -> conveyor ->consumeKey)); // out of while relinquish lock
     } 
 }
 
 void* makeEscargot(void* producer) {
     Producer* produce = (Producer*) producer; // safe, I know what I'm dealing with
     for(;;) {
-        sem_wait(&(produce -> conveyor -> produceKey)); // lock Entering critical section
-        if(produce -> conveyor -> lifeTimeProduced == maxCandy) { // 100 for the day
-            sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
-            // maybe also its own to ensure other is free?
-            break; // outta here
-        }
+        sem_wait(&(produce -> conveyor -> availSlots)); 
+        sem_wait(&(produce -> conveyor -> mutex));
+        // ensures thread leaves if other gen finsihed 
+         if(produce -> conveyor -> lifeTimeProduced == maxCandy) {
+            //sem_post(&(produce -> conveyor -> mutex));
+            //sem_post(&(produce -> conveyor ->consumeSignal));
+            break; // what if thread was outside? waiting? The other generator was responsible 
+         }
         //returns true as long as there are no more than 10 candies on the belt!
         if(produce -> conveyor -> push(escargotSucker)) {
             produce -> conveyor ->escargots++;
@@ -196,15 +223,11 @@ void* makeEscargot(void* producer) {
             cout <<  produce ->conveyor->escargots << " escargots = " << currentTotal <<  "."; 
             cout << " produced: " << produce ->conveyor->lifeTimeProduced;
             cout << "   " << "Added escargot sucker." << endl;
-
-            sem_post(&(produce -> conveyor ->consumeKey)); // there's stuff on the belt go get it!
-            sem_wait(&(produce -> conveyor -> produceKey)); // other producer gets a turn..?
-            // then post up
+            sem_post(&(produce -> conveyor -> mutex));
+            sem_post(&(produce -> conveyor ->consumeSignal));
+            if(produce -> conveyor -> lifeTimeProduced == maxCandy) 
+                break; // this generator was responsible. End it.
             sleep((produce ->speed)/1000); // /1000 to get ms
-        }
-        else {
-        //ten items on the belt
-        sem_post(&(produce -> conveyor ->consumeKey)); // relinquish lock
         }
     }
 }
