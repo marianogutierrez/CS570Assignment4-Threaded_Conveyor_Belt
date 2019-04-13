@@ -14,12 +14,10 @@ Belt::Belt(){
     lifeTimeConsumed = 0;
     // middle val in pshared, in this case it's 0 because it will be shared between threads.
     sem_init(&(this -> barrier),0,0);  // always to zero for barriers
-    sem_init(&(this -> consumeSignal),0,0);  
+    sem_init(&(this -> consumeSignal),0,0);  // ready to consume signal
     sem_init(&(this ->availSlots),0,10); 
-    sem_init(&(this ->frogSignal),0,0); 
+    sem_init(&(this ->frogSignal),0,0); // to disallow more than 3 frogbites at a time
     sem_init(&(this ->mutex),0,1); // bin semaphore  a.k.a a mutex 
-    //em_init(&(this ->consumeKey),0,1);
-    //sem_init(&(this -> produceKey),0,1); // bin. semaphore
 }
 
 Belt::~Belt(){
@@ -28,8 +26,6 @@ Belt::~Belt(){
     sem_destroy(&(this -> availSlots));
     sem_destroy(&(this -> frogSignal));
     sem_destroy(&(this -> mutex));
-    //sem_destroy(&(this -> produceKey));
-    //sem_destroy(&(this ->consumeKey));
 }
 
 bool Belt::push(int itemToQueue){

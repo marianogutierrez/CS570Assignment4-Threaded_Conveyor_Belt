@@ -15,13 +15,11 @@ class Belt{
         // Or, I guess I could put it here
         int lifeTimeProduced; // should add up to 100 each time.
         int lifeTimeConsumed; // again should add up to 100 this will be used to signal the barrier.
-        sem_t barrier;
-        sem_t consumeSignal;
-        sem_t availSlots;
-        sem_t frogSignal;
-        sem_t mutex;
-        //sem_t consumeKey
-        //sem_t produceKey;
+        sem_t barrier; // the barrier for printing the production report
+        sem_t consumeSignal; // to signal that the belt has candy
+        sem_t availSlots; // how many slots the belt has out of 10
+        sem_t frogSignal; // signal to disallow more than 3 candies 
+        sem_t mutex; // standard mutual exlcusion 
         Belt();
         ~Belt();
         bool push(int itemToQueue);
