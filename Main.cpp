@@ -117,7 +117,7 @@ void* consumeCandy(void* worker) {
       sem_wait(&(consume -> conveyor -> consumeSignal)); // block untill something to consume 
       sem_wait(&(consume -> conveyor -> mutex)); 
       // This starting if is to ensure other thread leaves.
-      if(consume ->conveyor->lifeTimeConsumed == maxCandy) { // exit casephoeix
+      if(consume ->conveyor->lifeTimeConsumed == maxCandy) { // exit case
         break; // ... and be free
       }
       if(consume ->conveyor -> belt ->size() != 0) { // If I can get some candy then ->
@@ -182,13 +182,12 @@ void* makeFrogBites(void* producer) {
                 sem_post(&(produce -> conveyor -> mutex)); // let another do work
                 sem_post(&(produce -> conveyor ->consumeSignal));
                 sem_wait(&(produce->conveyor->frogSignal)); // block this thread 
-                usleep((produce -> speed) * 1000); // /1000 to get ms
             } 
             else {
                 sem_post(&(produce -> conveyor -> mutex));
                 sem_post(&(produce -> conveyor ->consumeSignal));
-                usleep((produce -> speed) * 1000); // /1000 to get ms
             }
+            usleep((produce -> speed) * 1000); // /1000 to get ms
         }
     } 
 }

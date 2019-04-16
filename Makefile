@@ -3,7 +3,7 @@
 
 #Create Executable
 mizzo: Main.cpp Producer.o Belt.o Consumer.o
-	g++  Main.cpp Producer.o Belt.o Consumer.o  -g -o mizzo -lpthread -lrt
+	g++  Main.cpp Producer.o Belt.o Consumer.o  -g -o mizzo  -lpthread -lrt 
 
 #Create Producer object file
 Producer.o: Belt.o Producer.hpp Producer.cpp 
