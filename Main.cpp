@@ -54,8 +54,8 @@ int main(int argc, char** argv){
     }
 
     //Print the speeds (debug)
-    printf("Speeds:\n\tEthel Speed: %d\n\tLucy Speed: %d\n\tCrunchy Frog Speed: %d\n\tEscargot Speed: %d\n", 
-    ethelSpeed, lucySpeed, crunFrogSpeed, escargotSpeed);
+    //printf("Speeds:\n\tEthel Speed: %d\n\tLucy Speed: %d\n\tCrunchy Frog Speed: %d\n\tEscargot Speed: %d\n", 
+    //ethelSpeed, lucySpeed, crunFrogSpeed, escargotSpeed);
 
     // Our main workers
     Belt *conveyerBelt = new Belt(); // NOTE: NO MORE THAN 10 CANDIES ON THE BELT AT A TIME
